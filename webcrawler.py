@@ -7,11 +7,10 @@ from urllib.parse import urlparse, urljoin
 import os, codecs
 from urllib.robotparser import RobotFileParser
 from urllib.parse import unquote
+import time
 
 class WebCrawler:
     def __init__(self):
-        self.rp = RobotFileParser()
-
         self.keywords = [
                 "เชียงราย", "เชียงใหม่", "น่าน", "พะเยา", "แพร่", "แม่ฮ่องสอน", "ลำปาง", "ลำพูน", "อุตรดิตถ์",
                 "กำแพงเพชร", "พิจิตร", "พิษณุโลก", "เพชรบูรณ์", "สุโขทัย", "อุทัยธานี", "นครสวรรค์",
@@ -22,14 +21,14 @@ class WebCrawler:
                 "ปราจีนบุรี", "ระยอง", "สระแก้ว", "กรุงเทพ", "นครนายก", "นนทบุรี", "ปทุมธานี", "พระนครศรีอยุธยา",
                 "สมุทรปราการ", "สระบุรี", "อ่างทอง", "ชัยนาท", "ลพบุรี", "นครศรีธรรมราช", "กระบี่", "ชุมพร",
                 "ตรัง", "นครศรีธรรมราช", "นราธิวาส", "ปัตตานี", "พังงา", "พัทลุง", "ภูเก็ต", "ยะลา", "ระนอง",
-                "สงขลา", "สตูล", "สุราษฎร์ธานี"
+                "สงขลา", "สตูล", "สุราษฎร์ธานี", "ไทย", "thai"
             ]
 
         self.visited_q = []
         self.have_robots = []
         self.robot_now = ''
         self.is_continue = False
-        self.POOL_SIZE = 20
+        self.POOL_SIZE = 5
         self.visited_web = []
         self.seed_url = [
                 'https://www.lopburi.org/',
@@ -41,11 +40,13 @@ class WebCrawler:
                 'https://www.9mot.com/',
                 'https://www.gothaitogether.com/',
                 'https://www.sanook.com/travel/thailand/',
-                'https://www.thairath.co.th/lifestyle/travel/',
                 'https://travel.trueid.net/',
+                'https://chillpainai.com/',
+                'https://travelismylifeblog.blogspot.com/',
         ]
-        self.frontier_q = [self.seed_url[0]]
-
+        self.rp = [RobotFileParser() for _ in range(len(self.seed_url))]
+        self.frontier_q = [[url] for url in self.seed_url]  # Each index contains a list with a single seed URL
+        self.is_done = [False] * len(self.seed_url)  # List of boolean values
         self.wanted_list = ['htm', 'html', 'robots.txt']
 
         self.current_web = ''
@@ -92,14 +93,15 @@ class WebCrawler:
         return urls
 
     # param 'links' is a list of extracted links to be stored in the queue
-    def enqueue(self, link):
-        if link not in self.frontier_q and link not in self.visited_q:
-            self.frontier_q.append(link)
+    def enqueue(self, link, seed_order):
+        if (link not in self.frontier_q and link not in self.visited_q):
+            # print(f'==>{seed_order}')
+            self.frontier_q[seed_order].append(link)
 
     # FIFO queue
-    def dequeue(self):
-        current_url = self.frontier_q[0]
-        self.frontier_q = self.frontier_q[1:]
+    def dequeue(self, seed_order):
+        current_url = self.frontier_q[seed_order][0]
+        self.frontier_q[seed_order] = self.frontier_q[seed_order][1:]
         return current_url
 
     def sanitize_path(self, path):
@@ -164,36 +166,35 @@ class WebCrawler:
         # print(link)
         return link
     #region check_robot
-    async def check_robot(self, url, session):      
+    async def check_robot(self, url, seed_order):      
         parsed_url = urlparse(url)
         base_url = parsed_url.scheme + '://' + parsed_url.netloc
         robot = base_url + "/robots.txt"
         
-        if(parsed_url.netloc != self.current_web):
-            if (parsed_url.netloc == self.robot_now):
-                return False
-            print(f"Check Robot===>{robot}")
-            self.robot_now = parsed_url.netloc
-            self.rp = RobotFileParser()
-            self.rp.set_url(robot)
-            self.rp.read()
+        
+        print(f"Check Robot===>{robot}")
+        self.robot_now = parsed_url.netloc
+        self.rp[seed_order].set_url(robot)
+        self.rp[seed_order].read()
 
-            self.visited_q.append(robot)
-            raw = await self.get_page(robot,session)
+        self.visited_q.append(robot)
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=self.headers, timeout=40) as response:
+                    print(f"{self.count} Fetching {url}")
+                    response.raise_for_status()
+                    raw = await response.text()
+                    return raw
+        except Exception as e:
+            print(f"Failed {url}: {e}")
+            return ''
             
-            if(raw == ''):
-                self.current_web = parsed_url.netloc
-                return False
-            self.current_web = parsed_url.netloc
-            if(parsed_url.netloc not in self.visited_web):
-                self.visited_web.append(parsed_url.netloc)
-                await self.save_file(raw, robot)
-                self.count -= 1
-                f = codecs.open('list_robots.txt', 'a', 'utf-8')
-                f.write(f'{parsed_url.netloc}\n')
-                self.have_robots.append(parsed_url.netloc)
-        else:
-            return False
+        self.visited_web.append(parsed_url.netloc)
+        await self.save_file(raw, robot)
+        self.count -= 1
+        f = codecs.open('list_robots.txt', 'a', 'utf-8')
+        f.write(f'{parsed_url.netloc}\n')
+        self.have_robots.append(parsed_url.netloc)
     #region remove substring
     def remove_all_substrings(self, text, start_marker, end_marker):
         while start_marker in text and end_marker in text:
@@ -213,76 +214,78 @@ class WebCrawler:
         text = self.remove_all_substrings(text, '<nav', '</nav>')
         return text
     #region crawl
-    async def crawl(self, session, current_url):
+    async def crawl(self, session, current_url, seed_order):
         # print(f'------------{current_url}')
         
         f = codecs.open('visited_q.txt', 'a', 'utf-8')
         f.write(f'{current_url}\n')
         web = urlparse(current_url).netloc
-        can_check = await self.check_robot(current_url, session)
         # print(can_check)
         # print(f"{self.rp.last_checked}")
-        if(not self.rp.can_fetch("panyawat krongkitichu", current_url)):
+        if(not self.rp[seed_order].can_fetch("panyawat krongkitichu", current_url)):
             print(f'block_by_robot===>{current_url}')
             self.visited_q.append(current_url)
-            return False
-
-        
-
-        raw_html = await self.get_page(current_url, session)
-        extracted_links = self.link_parser(raw_html)
-        raw_html = self.remove_list(raw_html)
-        # print(raw_html)
-        if any(keyword in raw_html for keyword in self.keywords):
-            await self.save_file(raw_html, current_url)
-        else:
-            print(f'Skipping {current_url} (not relevant)')
-        self.visited_q.append(current_url)
-        
-        # print(extracted_links)
-        links = []
-        for link in extracted_links:
-            # print(link)
-            full_url = self.link_op(link, current_url)
-            # print(full_url)
-            if (self.is_invalid(urlparse(full_url))):
-                print(f'invalid===>{full_url}')
-                return
+        elif(current_url not in self.frontier_q and current_url not in self.visited_q):
+            raw_html = await self.get_page(current_url, session)
+            extracted_links = self.link_parser(raw_html)
+            raw_html = self.remove_list(raw_html)
+            # print(raw_html)
+            if any(keyword in raw_html for keyword in self.keywords):
+                await self.save_file(raw_html, current_url)
             else:
-                self.enqueue(full_url)
-        # print(self.frontier_q)
+                print(f'Skipping {current_url} (not relevant)')
+            self.visited_q.append(current_url)
+            
+            # print(extracted_links)
+            links = []
+            for link in extracted_links:
+                # print(link)
+                full_url = self.link_op(link, current_url)
+                # print(full_url)
+                if (self.is_invalid(urlparse(full_url))):
+                    # print(f'invalid===>{full_url}')
+                    print('',end='')
+                else:
+                    self.enqueue(full_url, seed_order)
+            # print(self.frontier_q)
     #region start
     async def main(self):
-        seed_count = 0
+        seed_order = 0
         # if (self.is_continue):
         #     f = codecs.open('visited_q.txt', 'r', 'utf-8')
         #     f = f.read()
         #     visited_q = f.strip().split('\n')
-        
+        for i in range(len(self.seed_url)):
+            await self.check_robot(self.seed_url[i], i)
+        tasks = {i: set() for i in range(len(self.seed_url))}
         async with aiohttp.ClientSession() as session:
-            tasks = set()
             while True:
-                
-                while len(tasks) < self.POOL_SIZE and self.frontier_q:
-                    url = self.dequeue()
-                    task = asyncio.create_task(self.crawl(session, url))
-                    tasks.add(task)
+                # print(seed_order)
+                # time.sleep(1)
+                while len(tasks[seed_order]) < self.POOL_SIZE and self.frontier_q[seed_order]:
+                    # time.sleep(0.05)
+                    url = self.dequeue(seed_order)
+                    task = asyncio.create_task(self.crawl(session, url, seed_order))
+                    tasks[seed_order].add(task)
                     # print(self.frontier_q)
-
                 try:
-                    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                    done, pending = await asyncio.wait(tasks[seed_order], return_when=asyncio.FIRST_COMPLETED)
                 except:
-                    if(self.frontier_q):
-                        continue
-                    else:
-                        seed_count+=1
-                        if(seed_count < len(self.seed_url)):
-                            self.frontier_q.append(self.seed_url[seed_count])
-                            continue
-                        else:
-                            return
+                    print(f'endof===>{self.seed_url[seed_order]}')
+                    if(not self.frontier_q[seed_order]):
+                        self.is_done[seed_order] = True
 
-                tasks.difference_update(done)
+                tasks[seed_order].difference_update(done)
+
+                if(seed_order < len(self.seed_url)-1):
+                    seed_order += 1
+                else:
+                    task.add_done_callback(tasks[seed_order].discard)
+                    
+                    seed_order = 0
+                if all(self.is_done):
+                    return
+
             
 #endregion
 if __name__ == "__main__":
