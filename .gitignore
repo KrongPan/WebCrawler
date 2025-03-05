@@ -1,3 +1,11 @@
-*
 !webcrawler.py
 !/.gitignore
+visited_q.txt
+html
+
+# Ignore Java compiled files
+*.class
+
+# IDE folders
+.idea/
+.vscode/
