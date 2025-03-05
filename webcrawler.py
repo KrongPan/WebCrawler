@@ -21,8 +21,15 @@ class WebCrawler:
                 "ปราจีนบุรี", "ระยอง", "สระแก้ว", "กรุงเทพ", "นครนายก", "นนทบุรี", "ปทุมธานี", "พระนครศรีอยุธยา",
                 "สมุทรปราการ", "สระบุรี", "อ่างทอง", "ชัยนาท", "ลพบุรี", "นครศรีธรรมราช", "กระบี่", "ชุมพร",
                 "ตรัง", "นครศรีธรรมราช", "นราธิวาส", "ปัตตานี", "พังงา", "พัทลุง", "ภูเก็ต", "ยะลา", "ระนอง",
-                "สงขลา", "สตูล", "สุราษฎร์ธานี", "ไทย", "thai"
+                "สงขลา", "สตูล", "สุราษฎร์ธานี", "ไทย", "thai", "เกาะล้าน", "ภูเก็ต"
             ]
+        self.non_keywords = [
+            "ญี่ปุ่น", "เกาหลี", "จีน", "ฮ่องกง", "ไต้หวัน",
+            "สิงคโปร์", "มาเลเซีย", "เวียดนาม", "อินโดนีเซีย", "ฟิลิปปินส์",
+            "ฝรั่งเศส", "สหราชอาณาจักร", "เยอรมนี", "อิตาลี", "สวิตเซอร์แลนด์",
+            "ออสเตรเลีย", "อเมริกา", "แคนาดา", "นิวซีแลนด์", "นอร์เวย์", "ฟินแลนด์",
+            "สวิตเซอร์แลนด์", "สวีเดน", "เดนมาร์ก"
+        ]
 
         self.visited_q = []
         self.have_robots = []
@@ -38,11 +45,11 @@ class WebCrawler:
                 'https://travel.kapook.com/',
                 'http://blog.unseentourthailand.com/',
                 'https://www.9mot.com/',
-                'https://www.gothaitogether.com/',
-                'https://www.sanook.com/travel/thailand/',
+                'https://www.sanook.com/travel/',
                 'https://travel.trueid.net/',
                 'https://chillpainai.com/',
                 'https://travelismylifeblog.blogspot.com/',
+                'https://www.checkinchill.com/',
         ]
         self.rp = [RobotFileParser() for _ in range(len(self.seed_url))]
         self.frontier_q = [[url] for url in self.seed_url]  # Each index contains a list with a single seed URL
@@ -171,7 +178,6 @@ class WebCrawler:
         base_url = parsed_url.scheme + '://' + parsed_url.netloc
         robot = base_url + "/robots.txt"
         
-        
         print(f"Check Robot===>{robot}")
         self.robot_now = parsed_url.netloc
         self.rp[seed_order].set_url(robot)
@@ -213,6 +219,23 @@ class WebCrawler:
         text = self.remove_all_substrings(text, '<aside', '</aside>')
         text = self.remove_all_substrings(text, '<nav', '</nav>')
         return text
+
+    def check_keyword(self, raw_html):
+        max_count = 0
+        keyword_counts = {key: raw_html.count(key) for key in self.keywords if key in raw_html}
+        non_keyword_counts = {key: raw_html.count(key) for key in self.non_keywords if key in raw_html}
+        # print(keyword_counts)
+        # print(non_keyword_counts)
+        for k,v in keyword_counts.items():
+            if v > max_count:
+                max_count = v
+        for k,v in non_keyword_counts.items():
+            if v > max_count:
+                max_count = v
+                return False
+        return True
+
+
     #region crawl
     async def crawl(self, session, current_url, seed_order):
         # print(f'------------{current_url}')
@@ -230,7 +253,7 @@ class WebCrawler:
             extracted_links = self.link_parser(raw_html)
             raw_html = self.remove_list(raw_html)
             # print(raw_html)
-            if any(keyword in raw_html for keyword in self.keywords):
+            if self.check_keyword(raw_html):
                 await self.save_file(raw_html, current_url)
             else:
                 print(f'Skipping {current_url} (not relevant)')
@@ -271,8 +294,8 @@ class WebCrawler:
                 try:
                     done, pending = await asyncio.wait(tasks[seed_order], return_when=asyncio.FIRST_COMPLETED)
                 except:
-                    print(f'endof===>{self.seed_url[seed_order]}')
                     if(not self.frontier_q[seed_order]):
+                        print(f'endof===>{self.seed_url[seed_order]}')
                         self.is_done[seed_order] = True
 
                 tasks[seed_order].difference_update(done)
