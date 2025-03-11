@@ -1,0 +1,76 @@
+กรุงเทพ, Bangkok
+กระบี่, Krabi
+กาญจนบุรี, Kanchanaburi
+กาฬสินธุ์, Kalasin
+ขอนแก่น, Khon Kaen
+จันทบุรี, Chanthaburi
+ฉะเชิงเทรา, Chachoengsao
+ชลบุรี, Chonburi
+ชัยนาท, Chai Nat
+ชัยภูมิ, Chaiyaphum
+เชียงราย, Chiang Rai
+เชียงใหม่, Chiang Mai
+ตรัง, Trang
+ตาก, Tak
+นครนายก, Nakhon Nayok
+นครปฐม, Nakhon Pathom
+นครพนม, Nakhon Phanom
+นครราชสีมา, Nakhon Ratchasima
+นครศรีธรรมราช, Nakhon Si Thammarat
+นราธิวาส, Narathiwat
+น่าน, Nan
+บึงกาฬ, Bueng Kan
+บุรีรัมย์, Buriram
+ปทุมธานี, Pathum Thani
+ประจวบคีรีขันธ์, Prachuap Khiri Khan
+ปราจีนบุรี, Prachinburi
+พะเยา, Phayao
+พิจิตร, Phichit
+พิษณุโลก, Phitsanulok
+เพชรบุรี, Phetchaburi
+เพชรบูรณ์, Phetchabun
+แพร่, Phrae
+ภูเก็ต, Phuket
+มหาสารคาม, Maha Sarakham
+มุกดาหาร, Mukdahan
+แม่ฮ่องสอน, Mae Hong Son
+ยโสธร, Yasothon
+ร้อยเอ็ด, Roi Et
+ระนอง, Ranong
+ระยอง, Rayong
+ราชบุรี, Ratchaburi
+ลพบุรี, Lopburi
+ลำปาง, Lampang
+ลำพูน, Lamphun
+เลย, Loei
+ศรีสะเกษ, Sisaket
+สกลนคร, Sakon Nakhon
+สงขลา, Songkhla
+สตูล, Satun
+สมุทรปราการ, Samut Prakan
+สมุทรสงคราม, Samut Songkhram
+สมุทรสาคร, Samut Sakhon
+สระแก้ว, Sa Kaeo
+สระบุรี, Saraburi
+สิงห์บุรี, Singburi
+สุโขทัย, Sukhothai
+สุพรรณบุรี, Suphanburi
+สุราษฎร์ธานี, Surat Thani
+สุรินทร์, Surin
+หนองคาย, Nong Khai
+หนองบัวลำภู, Nong Bua Lamphu
+อ่างทอง, Ang Thong
+อำนาจเจริญ, Amnat Charoen
+อุดรธานี, Udon Thani
+อุตรดิตถ์, Uttaradit
+อุทัยธานี, Uthai Thani
+อุบลราชธานี, Ubon Ratchathani
+แม่ฮ่องสอน, Mae Hong Son
+สตูล, Satun
+สระแก้ว, Sa Kaeo
+ชลบุรี, Chonburi
+ภูเก็ต, Phuket
+ปัตตานี, Pattani
+พัทลุง, Phatthalung
+ลำพูน, Lamphun
+นครพนม, Nakhon Phanom
