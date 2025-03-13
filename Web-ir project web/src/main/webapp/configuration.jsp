@@ -18,6 +18,6 @@
 /* Author: Andrew C. Oliver (acoliver2@users.sourceforge.net) */
 String appTitle = "Thai  Server Search Application naja if u know u know";
 /* make sure you point the below string to the index you created with IndexHTML */
-String indexLocation = "D:\\web ir\\group-project\\thai_tour_index_custom\\thai_tour_index_custom";
+String indexLocation = ""; <!-- insert your index path here -->
 String appfooter = "Apache Lucene Template WebApp 1.0";
 %>
